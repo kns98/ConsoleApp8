@@ -7,16 +7,15 @@ Module Program
         Console.WriteLine("Hello World!")
         Dim a As Object
         Dim e As New ExpressionEvaluator()
-        a = e.EvaluatePostfix("5 5 +")
+        a = e.EvaluatePostfix(e.InfixToPostfix("5+5"))
         Console.WriteLine(a)
         Console.ReadLine()
     End Sub
 End Module
 
-
 Public Class ExpressionEvaluator
 
-    Private LookAhead As String
+    Private LookAhead As Tuple(Of String, String)
     Private ExprString As String
     Private LexPos As Integer
 
@@ -105,29 +104,20 @@ Public Class ExpressionEvaluator
 
     ' Match current token and advance
     Private Sub MatchAndIncrement(checkValue As String)
-        If LookAhead = checkValue Then
+        If LookAhead.Item1 = checkValue Then
             LookAhead = LexicalAnalyzer()
         Else
             Throw New Exception("Syntax Error")
         End If
     End Sub
 
-    ' Parse the entire expression
-    Private Sub ParseAll(output As StringBuilder)
-        LookAhead = LexicalAnalyzer()
-
-        Do Until String.IsNullOrEmpty(LookAhead)
-            ParseExpression(output)
-        Loop
-    End Sub
-
     ' Parse expressions
     Private Sub ParseExpression(output As StringBuilder)
         ParseTerm(output)
 
-        Do While LookAhead = "+" OrElse LookAhead = "-"
-            Dim temp As String = LookAhead
-            MatchAndIncrement(LookAhead)
+        Do While LookAhead.Item1 = "+" OrElse LookAhead.Item1 = "-"
+            Dim temp As String = LookAhead.Item1
+            MatchAndIncrement(LookAhead.Item1)
             ParseTerm(output)
             AddToPostFix(output, temp)
         Loop
@@ -137,9 +127,9 @@ Public Class ExpressionEvaluator
     Private Sub ParseTerm(output As StringBuilder)
         ParseFactor(output)
 
-        Do While LookAhead = "*" OrElse LookAhead = "/" OrElse LookAhead = "MOD" OrElse LookAhead = "\"
-            Dim temp As String = LookAhead
-            MatchAndIncrement(LookAhead)
+        Do While LookAhead.Item1 = "*" OrElse LookAhead.Item1 = "/" OrElse LookAhead.Item1 = "MOD" OrElse LookAhead.Item1 = "\"
+            Dim temp As String = LookAhead.Item1
+            MatchAndIncrement(LookAhead.Item1)
             ParseFactor(output)
             AddToPostFix(output, temp)
         Loop
@@ -147,13 +137,16 @@ Public Class ExpressionEvaluator
 
     ' Parse factors
     Private Sub ParseFactor(output As StringBuilder)
-        Select Case LookAhead
+        Select Case LookAhead.Item1
             Case "("
                 MatchAndIncrement("(")
                 ParseExpression(output)
                 MatchAndIncrement(")")
-            Case "NUM", "ID"
-                AddToPostFix(output, LookAhead)
+            Case "NUM"
+                AddToPostFix(output, LookAhead.Item2)
+                LookAhead = LexicalAnalyzer()
+            Case "ID"
+                AddToPostFix(output, LookAhead.Item2)
                 LookAhead = LexicalAnalyzer()
             Case Else
                 Throw New Exception("Syntax Error")
@@ -166,10 +159,10 @@ Public Class ExpressionEvaluator
     End Sub
 
     ' Function to simulate the lexical analyzer
-    Private Function LexicalAnalyzer() As String
+    Private Function LexicalAnalyzer() As Tuple(Of String, String)
         ' Simulated lexical analysis for illustration
         If LexPos >= ExprString.Length Then
-            Return ""
+            Return Tuple.Create("", "")
         End If
 
         Dim currentChar As Char = ExprString(LexPos)
@@ -178,11 +171,21 @@ Public Class ExpressionEvaluator
         If Char.IsWhiteSpace(currentChar) Then
             Return LexicalAnalyzer()
         ElseIf Char.IsDigit(currentChar) Then
-            Return "NUM"
+            Dim number As New StringBuilder(currentChar.ToString())
+            While LexPos < ExprString.Length AndAlso Char.IsDigit(ExprString(LexPos))
+                number.Append(ExprString(LexPos))
+                LexPos += 1
+            End While
+            Return Tuple.Create("NUM", number.ToString())
         ElseIf Char.IsLetter(currentChar) Then
-            Return "ID"
+            Dim identifier As New StringBuilder(currentChar.ToString())
+            While LexPos < ExprString.Length AndAlso Char.IsLetterOrDigit(ExprString(LexPos))
+                identifier.Append(ExprString(LexPos))
+                LexPos += 1
+            End While
+            Return Tuple.Create("ID", identifier.ToString())
         Else
-            Return currentChar.ToString()
+            Return Tuple.Create(currentChar.ToString(), currentChar.ToString())
         End If
     End Function
 
