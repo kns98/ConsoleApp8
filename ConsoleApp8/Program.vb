@@ -7,7 +7,7 @@ Module Program
         Console.WriteLine("Hello World!")
         Dim a As Object
         Dim e As New ExpressionEvaluator()
-        a = e.EvaluatePostfix(e.InfixToPostfix("SIN(5) + TAN(5) + COS(10) + LOG(100) + EXP(1)"))
+        a = e.EvaluatePostfix(e.InfixToPostfix("SQRT(16)"))
         Console.WriteLine(a)
         Console.ReadLine()
     End Sub
