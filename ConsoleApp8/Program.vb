@@ -7,7 +7,7 @@ Module Program
         Console.WriteLine("Hello World!")
         Dim a As Object
         Dim e As New ExpressionEvaluator()
-        a = e.EvaluatePostfix(e.InfixToPostfix("5+5"))
+        a = e.EvaluatePostfix(e.InfixToPostfix("SIN(5) + TAN(5) + COS(10) + LOG(100) + EXP(1)"))
         Console.WriteLine(a)
         Console.ReadLine()
     End Sub
@@ -34,6 +34,10 @@ Public Class ExpressionEvaluator
             ElseIf token = "True" OrElse token = "False" Then
                 ' Handle Boolean values
                 stack.Push(If(token = "True", -1, 0))
+            ElseIf IsFunction(token) Then
+                ' Handle function calls
+                Dim operand As Double = Convert.ToDouble(stack.Pop())
+                stack.Push(EvaluateFunction(token, operand))
             Else
                 ' Pop operands for the operator
                 Dim rightOperand As Double = Convert.ToDouble(stack.Pop())
@@ -146,8 +150,16 @@ Public Class ExpressionEvaluator
                 AddToPostFix(output, LookAhead.Item2)
                 LookAhead = LexicalAnalyzer()
             Case "ID"
-                AddToPostFix(output, LookAhead.Item2)
+                Dim functionName As String = LookAhead.Item2
                 LookAhead = LexicalAnalyzer()
+                If LookAhead.Item1 = "(" Then
+                    MatchAndIncrement("(")
+                    ParseExpression(output)
+                    MatchAndIncrement(")")
+                    AddToPostFix(output, functionName)
+                Else
+                    AddToPostFix(output, functionName)
+                End If
             Case Else
                 Throw New Exception("Syntax Error")
         End Select
@@ -189,35 +201,53 @@ Public Class ExpressionEvaluator
         End If
     End Function
 
-    ' Function to look up numerical identifiers for trigonometric functions
-    Private Function LookUpFunctionNumber(functionName As String) As Integer
-        Select Case functionName.ToUpper()
-            Case "SIN"
-                Return 13
-            Case "COS"
-                Return 14
-            Case "TAN"
-                Return 15
-            Case "SEC"
-                Return 16
-            Case "COSEC"
-                Return 17
-            Case "COT"
-                Return 18
-            Case "HSIN"
-                Return 19
-            Case "HCOS"
-                Return 20
-            Case "HTAN"
-                Return 21
-            Case "HSEC"
-                Return 22
-            Case "HCOSEC"
-                Return 23
-            Case "HCOT"
-                Return 24
+    ' Function to check if a token is a function
+    Private Function IsFunction(token As String) As Boolean
+        Select Case token
+            Case "SIN", "COS", "TAN", "SEC", "COSEC", "COT", "HSIN", "HCOS", "HTAN", "HSEC", "HCOSEC", "HCOT", "EXP", "LOG", "SQRT", "ABS"
+                Return True
             Case Else
-                Return 0
+                Return False
+        End Select
+    End Function
+
+    ' Function to evaluate mathematical functions
+    Private Function EvaluateFunction(functionName As String, value As Double) As Double
+        Select Case functionName
+            Case "SIN"
+                Return Math.Sin(value)
+            Case "COS"
+                Return Math.Cos(value)
+            Case "TAN"
+                Return Math.Tan(value)
+            Case "SEC"
+                Return 1 / Math.Cos(value)
+            Case "COSEC"
+                Return 1 / Math.Sin(value)
+            Case "COT"
+                Return 1 / Math.Tan(value)
+            Case "HSIN"
+                Return Math.Sinh(value)
+            Case "HCOS"
+                Return Math.Cosh(value)
+            Case "HTAN"
+                Return Math.Tanh(value)
+            Case "HSEC"
+                Return 1 / Math.Cosh(value)
+            Case "HCOSEC"
+                Return 1 / Math.Sinh(value)
+            Case "HCOT"
+                Return 1 / Math.Tanh(value)
+            Case "EXP"
+                Return Math.Exp(value)
+            Case "LOG"
+                Return Math.Log(value)
+            Case "SQRT"
+                Return Math.Sqrt(value)
+            Case "ABS"
+                Return Math.Abs(value)
+            Case Else
+                Throw New Exception("Unknown function: " & functionName)
         End Select
     End Function
 
