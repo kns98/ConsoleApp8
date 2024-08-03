@@ -5,6 +5,11 @@ Imports System.Collections.Generic
 Module Program
     Sub Main(args As String())
         Console.WriteLine("Hello World!")
+        Dim a As Object
+        Dim e As New ExpressionEvaluator()
+        a = e.EvaluatePostfix("5 5 +")
+        Console.WriteLine(a)
+        Console.ReadLine()
     End Sub
 End Module
 
@@ -20,7 +25,7 @@ Public Class ExpressionEvaluator
         Dim stack As New Stack(Of Object)()
 
         ' Split the expression by spaces
-        Dim tokens As String() = expression.Split(" "c)
+        Dim tokens As String() = expression.Split(" ")
 
         ' Loop through each token
         For Each token As String In tokens
